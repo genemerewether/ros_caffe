@@ -60,7 +60,7 @@ void ConnectCallback(const ros::SingleSubscriberPublisher& info)
         ROS_DEBUG("New Subscribers, Connecting to Input Image Topic.");
         ros::TransportHints ros_transport_hints(ros::TransportHints().tcpNoDelay());
         image_transport::TransportHints image_transport_hint(image_transport::TransportHints(
-                                                                 "raw", ros_transport_hints, (*node_),
+                                                                 "compressed", ros_transport_hints, (*node_),
                                                                  "image_transport"));
 
         image_subscriber = (*image_).subscribe(

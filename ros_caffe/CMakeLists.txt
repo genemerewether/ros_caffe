@@ -64,7 +64,9 @@ include_directories( include
 
 add_library(${PROJECT_NAME}_lib src/ros_caffe.cpp)
 link_directories(${Caffe_LIBRARIES})
+
 add_executable(${PROJECT_NAME}_node src/ros_caffe.cpp)
+add_executable(${PROJECT_NAME}_test src/ros_caffe_test.cpp)
 
 target_link_libraries(${PROJECT_NAME}_lib
     ${catkin_LIBRARIES}
@@ -77,11 +79,19 @@ target_link_libraries(${PROJECT_NAME}_node
   ${PROJECT_NAME}_lib
 )
 
-install(TARGETS ${PROJECT_NAME}_lib ${PROJECT_NAME}_node
+target_link_libraries(${PROJECT_NAME}_test
+  ${PROJECT_NAME}_lib
+)
+
+install(TARGETS ${PROJECT_NAME}_lib ${PROJECT_NAME}_node ${PROJECT_NAME}_test
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+# install(TARGETS 
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}

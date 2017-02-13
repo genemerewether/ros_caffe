@@ -10,7 +10,7 @@
 #include <std_msgs/String.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
-#include "Classifier.h"
+#include "ros_caffe/Classifier.h"
 
 const std::string RECEIVE_IMG_TOPIC_NAME = "camera/rgb/image_raw";
 const std::string PUBLISH_RET_TOPIC_NAME = "/caffe_ret";
