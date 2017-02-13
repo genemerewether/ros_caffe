@@ -2,9 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(ros_caffe)
 
 #add_definitions(-DCPU_ONLY=1)
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
+
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   std_msgs
@@ -17,85 +15,35 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
 )
 
-## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(OpenCV REQUIRED)
-# find_package(CUDA REQUIRED)
-find_package(Caffe REQUIRED)
+add_definitions(-DUSE_ACCELERATE)
+#set(CUDA_TOOLKIT_ROOT_DIR "/Developer/NVIDIA/CUDA-8.0")
+find_package(CUDA REQUIRED)
+#find_package(Caffe REQUIRED)
 
 include(FindPkgConfig)
+
+unset(Caffe_FOUND)
+
+find_path(Caffe_INCLUDE_DIRS NAMES caffe/caffe.hpp caffe/common.hpp caffe/net.hpp caffe/proto/caffe.pb.h caffe/util/io.hpp
+  HINTS
+  /usr/local/caffe/include)
+
+find_library(Caffe_LIBRARIES NAMES caffe
+  HINTS
+  /usr/local/caffe/lib)
+
+if(Caffe_LIBRARIES AND Caffe_INCLUDE_DIRS)
+    set(Caffe_FOUND 1)
+endif()
 
 include_directories(${Caffe_INCLUDE_DIRS})
 add_definitions(${Caffe_DEFINITIONS})
 
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
-
-################################################
-## Declare ROS messages, services and actions ##
-################################################
-
-## To declare and build messages, services or actions from within this
-## package, follow these steps:
-## * Let MSG_DEP_SET be the set of packages whose message types you use in
-##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-## * In the file package.xml:
-##   * add a build_depend and a run_depend tag for each package in MSG_DEP_SET
-##   * If MSG_DEP_SET isn't empty the following dependencies might have been
-##     pulled in transitively but can be declared for certainty nonetheless:
-##     * add a build_depend tag for "message_generation"
-##     * add a run_depend tag for "message_runtime"
-## * In this file (CMakeLists.txt):
-##   * add "message_generation" and every package in MSG_DEP_SET to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * add "message_runtime" and every package in MSG_DEP_SET to
-##     catkin_package(CATKIN_DEPENDS ...)
-##   * uncomment the add_*_files sections below as needed
-##     and list every .msg/.srv/.action file to be processed
-##   * uncomment the generate_messages entry below
-##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
-
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
-
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
-
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
-
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
         INCLUDE_DIRS include
-        LIBRARIES ros_caffe
+        LIBRARIES ${PACKAGE_NAME}_lib
         CATKIN_DEPENDS
                 cv_bridge
                 std_msgs
@@ -103,107 +51,61 @@ catkin_package(
                 image_transport
                 roscpp
                 cmake_modules
-                message_generation
+		message_runtime
         DEPENDS system_lib
 )
 
-###########
-## Build ##
-###########
-
-# ## Declare a cpp library
-# # Tell CMake that the external project generated a library so we
-# # can add dependencies here instead of later.
-#add_library(ros_caffe UNKNOWN IMPORTED)
-#set_property(TARGET ros_caffe
-#  PROPERTY IMPORTED_LOCATION
-#  ${ros_caffe_LIBRARIES}
-#)
-
-# ## Specify additional locations of header files
-# ## Your package locations should be listed before other locations
 include_directories( include
     ${catkin_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
     ${Caffe_INCLUDE_DIRS}
-    # ${CUDA_INCLUDEDIR}
+    ${CUDA_INCLUDE_DIRS}
 )
 
-# ## Declare a cpp executable
-add_library(ros_caffe  src/ros_caffe.cpp)
-link_directories(${Caffe_LINK_LIBRARAY})
-add_executable(ros_caffe_node src/ros_caffe.cpp)
+add_library(${PROJECT_NAME}_lib src/ros_caffe.cpp)
+link_directories(${Caffe_LIBRARIES})
+add_executable(${PROJECT_NAME}_node src/ros_caffe.cpp)
 
-# ## Add cmake target dependencies of the executable/library
-# ## as an example, message headers may need to be generated before nodes
-# make sure configure headers are built before any node using them
-add_dependencies(ros_caffe
-    ${PROJECT_NAME}_gencfg)
-
-add_dependencies(ros_caffe_node
-    ${PROJECT_NAME}_gencfg)
-
-# ## Specify libraries to link a library or executable target against
-target_link_libraries(ros_caffe_node
+target_link_libraries(${PROJECT_NAME}_lib
     ${catkin_LIBRARIES}
     ${OpenCV_LIBRARIES}
-    ${CAFFE_LINK_LIBRARAY}
-    ros_caffe
+    ${Caffe_LIBRARIES}
     glog
-    caffe
-    # cuda
 )
 
-#############
-## Install ##
-#############
+target_link_libraries(${PROJECT_NAME}_node
+  ${PROJECT_NAME}_lib
+)
 
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
+install(TARGETS ${PROJECT_NAME}_lib ${PROJECT_NAME}_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
 
-## Mark executables and/or libraries for installation
-# install(TARGETS ros_caffe ros_caffe_node
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(DIRECTORY data/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/data
+  PATTERN ".svn" EXCLUDE
+)
 
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY cfg/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/cfg
+  PATTERN ".svn" EXCLUDE
+)
+
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+  PATTERN ".svn" EXCLUDE
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
-#    ${ros_caffe_LIBRARIES}
+#    ${${PROJECT_NAME}_LIBRARIES}
 #    DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 # )
-
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ros_caffe.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
-
-# link_directories(${CAFFE_LINK_LIBRARAY})
-# add_executable(ros_caffe_test src/ros_caffe_test.cpp)
-# target_link_libraries(ros_caffe_test ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} caffe glog)
-
-# add_executable(ros_caffe src/ros_caffe.cpp)
-# target_link_libraries(ros_caffe ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} caffe glog)
