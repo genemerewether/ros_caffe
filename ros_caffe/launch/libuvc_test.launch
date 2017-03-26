@@ -1,9 +1,8 @@
 <launch>
   <arg name="image_from"            default="image_raw" />
-  <arg name="image_to"            default="ros_caffe/image" />
+  <arg name="image_to"            default="image" />
   <arg name="throttle_to"      default="0.5" />
-  <arg name="camera_info_from"      default="camera_info" />
-  <arg name="camera_info_to"      default="ros_caffe/camera_info" />
+  <arg name="camera_info"      default="camera_info" />
 
   <env name="ROSCONSOLE_CONFIG_FILE" value="$(find ros_caffe)/cfg/custom_rosconsole.conf"/>
 
@@ -28,17 +27,16 @@
     <param name="auto_exposure" value="0"/> <!-- use manual exposure, manual iris -->
     <param name="auto_white_balance" value="false"/>
 
-
     <remap from="~image_raw"    to="$(arg image_from)"/>
-    <remap from="~camera_info"  to="$(arg camera_info_from)"/>
+    <remap from="~camera_info"  to="$(arg camera_info)"/>
   </node>
- 
-  <include file="$(find ros_caffe)/launch/ros_caffe.launch">
-    <!--arg name="image" value="$(arg image_to)" /-->
-    <!--arg name="camera_info" value="$(arg camera_info_to)" /-->
-  </include>
 
   <node name="$(anon im1)" type="throttle" pkg="topic_tools" args="messages $(arg image_from)/compressed $(arg throttle_to) $(arg image_to)/compressed" />
-  <node name="$(anon im4)" type="throttle" pkg="topic_tools" args="messages $(arg camera_info_from) $(arg throttle_to) /ros_caffe/$(arg camera_info_to)" />
+
+  <node name="$(anon im2)" type="throttle" pkg="topic_tools" args="messages $(arg image_from)/compressed/parameter_updates $(arg throttle_to) $(arg image_to)/compressed/parameter_updates" />
+
+  <node name="$(anon im3)" type="throttle" pkg="topic_tools" args="messages $(arg image_from)/compressed/parameter_descriptions $(arg throttle_to) $(arg image_to)/compressed/parameter_descriptions" />
+
+  <node name="$(anon im0)" type="throttle" pkg="topic_tools" args="messages $(arg image_from) $(arg throttle_to) $(arg image_to)" />
 
 </launch>
